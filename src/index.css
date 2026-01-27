@@ -1,0 +1,218 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* --- MODO CLARO --- */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 5%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 5%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 5%;
+
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 16% 40%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222 47% 11%;
+
+    --radius: 0.75rem;
+
+    /* Cores dos Módulos */
+    --finance: 221 83% 53%;
+    --finance-light: 217 91% 95%;
+    --health: 142 76% 36%;
+    --health-light: 142 71% 95%;
+    --training: 25 95% 53%;
+    --training-light: 25 95% 95%;
+    --schedule: 262 83% 58%;
+    --schedule-light: 262 83% 95%;
+    --academic: 199 89% 48%;
+    --academic-light: 199 89% 95%;
+
+    --gradient-finance: linear-gradient(135deg, hsl(221, 83%, 53%) 0%, hsl(234, 89%, 74%) 100%);
+    --gradient-health: linear-gradient(135deg, hsl(142, 76%, 36%) 0%, hsl(158, 64%, 52%) 100%);
+    --gradient-training: linear-gradient(135deg, hsl(25, 95%, 53%) 0%, hsl(39, 100%, 50%) 100%);
+    --gradient-schedule: linear-gradient(135deg, hsl(262, 83%, 58%) 0%, hsl(284, 77%, 65%) 100%);
+    --gradient-academic: linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(217, 91%, 60%) 100%);
+
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+    --shadow-finance: 0 4px 14px 0 hsl(217 91% 60% / 0.25);
+    --shadow-health: 0 4px 14px 0 hsl(142 71% 45% / 0.25);
+    --shadow-training: 0 4px 14px 0 hsl(25 95% 53% / 0.25);
+    --shadow-schedule: 0 4px 14px 0 hsl(262 83% 58% / 0.25);
+  }
+
+  .dark {
+    /* --- MODO ESCURO (Textos 100% Brancos) --- */
+    --background: 222 47% 4%;
+    --foreground: 0 0% 100%;
+
+    --card: 222 47% 6%; /* Fundo escuro */
+    --card-foreground: 0 0% 100%; /* Texto Branco Puro */
+
+    --popover: 222 47% 6%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 217 33% 15%;
+    --muted-foreground: 215 20% 90%; /* Cinza muito claro para leitura fácil */
+
+    --accent: 217 33% 15%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 33% 15%;
+    --input: 217 33% 15%;
+    --ring: 212.7 26.8% 83.9%;
+
+    --finance: 217 91% 75%;
+    --finance-light: 217 91% 15%;
+    --health: 142 71% 65%;
+    --health-light: 142 71% 15%;
+    --training: 25 95% 70%;
+    --training-light: 25 95% 15%;
+    --schedule: 262 83% 75%;
+    --schedule-light: 262 83% 15%;
+    --academic: 199 89% 65%;
+    --academic-light: 199 89% 15%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  /* ========================================================================
+     CORREÇÃO FORÇADA PARA O RECHARTS (GRÁFICOS) NO MODO ESCURO
+     ======================================================================== */
+  
+  /* 1. Força a cor do texto dos Eixos (X e Y) e Legendas SVG para BRANCO */
+  .dark .recharts-text,
+  .dark .recharts-cartesian-axis-tick-value,
+  .dark .recharts-legend-item-text {
+    fill: #ffffff !important;
+    color: #ffffff !important;
+  }
+
+  /* 2. Força o texto dentro do TOOLTIP (aquele quadradinho flutuante) para BRANCO */
+  .dark .recharts-default-tooltip {
+    background-color: hsl(var(--card)) !important;
+    border-color: hsl(var(--border)) !important;
+    color: #ffffff !important;
+  }
+
+  /* Garante que cada item da lista do tooltip seja branco */
+  .dark .recharts-tooltip-item-list li,
+  .dark .recharts-tooltip-item-name,
+  .dark .recharts-tooltip-item-value,
+  .dark .recharts-tooltip-wrapper .recharts-tooltip-item {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+  }
+  
+  /* 3. Ajusta a opacidade das linhas de grade para não poluir */
+  .dark .recharts-cartesian-grid-horizontal line,
+  .dark .recharts-cartesian-grid-vertical line {
+    stroke: #334155 !important;
+    opacity: 0.5;
+  }
+}
+
+@layer components {
+  .module-card {
+    @apply relative overflow-hidden rounded-xl border bg-card p-6 transition-all duration-300;
+    box-shadow: var(--shadow-md);
+  }
+  .module-card:hover {
+    @apply -translate-y-1;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .module-card-finance { @apply border-l-4; border-left-color: hsl(var(--finance)); }
+  .module-card-finance:hover { box-shadow: var(--shadow-finance); }
+
+  .module-card-health { @apply border-l-4; border-left-color: hsl(var(--health)); }
+  .module-card-health:hover { box-shadow: var(--shadow-health); }
+
+  .module-card-training { @apply border-l-4; border-left-color: hsl(var(--training)); }
+  .module-card-training:hover { box-shadow: var(--shadow-training); }
+
+  .module-card-schedule { @apply border-l-4; border-left-color: hsl(var(--schedule)); }
+  .module-card-schedule:hover { box-shadow: var(--shadow-schedule); }
+
+  .metric-card {
+    @apply flex flex-col gap-2 rounded-xl bg-card p-5 border transition-all duration-200;
+    box-shadow: var(--shadow-sm);
+  }
+  .metric-card:hover { box-shadow: var(--shadow-md); }
+
+  .icon-container { @apply flex h-12 w-12 items-center justify-center rounded-xl; }
+  
+  .icon-finance { background: var(--gradient-finance); @apply text-white; }
+  .icon-health { background: var(--gradient-health); @apply text-white; }
+  .icon-training { background: var(--gradient-training); @apply text-white; }
+  .icon-schedule { background: var(--gradient-schedule); @apply text-white; }
+
+  .status-badge { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium; }
+  .status-synced { @apply bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300; }
+  .status-pending { @apply bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300; }
+
+  .nav-item { @apply flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all duration-200; }
+  .nav-item:hover { @apply bg-accent text-accent-foreground; }
+  .nav-item.active { @apply bg-primary text-primary-foreground; }
+
+  .text-finance { color: hsl(var(--finance)); }
+  .text-health { color: hsl(var(--health)); }
+  .text-training { color: hsl(var(--training)); }
+  .text-schedule { color: hsl(var(--schedule)); }
+
+  .bg-finance { background-color: hsl(var(--finance)); }
+  .bg-finance-light { background-color: hsl(var(--finance-light)); }
+  .bg-health { background-color: hsl(var(--health)); }
+  .bg-health-light { background-color: hsl(var(--health-light)); }
+  .bg-training { background-color: hsl(var(--training)); }
+  .bg-training-light { background-color: hsl(var(--training-light)); }
+  .bg-schedule { background-color: hsl(var(--schedule)); }
+  .bg-schedule-light { background-color: hsl(var(--schedule-light)); }
+  
+  @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+}
