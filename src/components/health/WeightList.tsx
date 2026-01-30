@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Dumbbell, CalendarDays, ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { Scale, CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-interface HealthLogProps {
-  data: { item: string; date: string; value?: number }[];
+interface WeightListProps {
+  data: { date: string; value: number }[];
 }
 
-export function HealthLog({ data }: HealthLogProps) {
+export function WeightList({ data }: WeightListProps) {
   const [showAll, setShowAll] = useState(false);
 
   if (data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-32 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
-        <Dumbbell className="h-8 w-8 mb-2 opacity-50" />
-        <p className="text-sm font-medium">Nenhum treino registrado</p>
+        <Scale className="h-8 w-8 mb-2 opacity-50" />
+        <p className="text-sm font-medium">Nenhum registro de peso</p>
       </div>
     );
   }
@@ -24,27 +24,20 @@ export function HealthLog({ data }: HealthLogProps) {
 
   return (
     <div className="space-y-3">
-      {displayedData.map((workout, index) => (
+      {displayedData.map((item, index) => (
         <div
           key={index}
           className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-all hover:shadow-sm"
         >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
-            <Dumbbell className="h-5 w-5" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+            <Scale className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex justify-between items-start">
-              <p className="font-semibold text-foreground truncate">{workout.item}</p>
-              {workout.value && workout.value > 0 && (
-                <span className="text-xs font-bold bg-orange-50 text-orange-600 px-2 py-1 rounded-md flex items-center gap-1">
-                  <Clock className="h-3 w-3" /> {workout.value} min
-                </span>
-              )}
-            </div>
+            <p className="font-semibold text-foreground">{item.value} kg</p>
             <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
               <CalendarDays className="h-3 w-3" />
               <span className="capitalize">
-                {format(parseISO(workout.date), "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                {format(parseISO(item.date), "dd 'de' MMMM", { locale: ptBR })}
               </span>
             </div>
           </div>
@@ -62,7 +55,7 @@ export function HealthLog({ data }: HealthLogProps) {
             {showAll ? (
               <>Mostrar menos <ChevronUp className="h-4 w-4" /></>
             ) : (
-              <>Ver todos os treinos ({data.length}) <ChevronDown className="h-4 w-4" /></>
+              <>Ver histórico completo ({data.length}) <ChevronDown className="h-4 w-4" /></>
             )}
           </Button>
         </div>

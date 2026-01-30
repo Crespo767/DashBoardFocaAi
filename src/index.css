@@ -6,38 +6,42 @@
 
 @layer base {
   :root {
-    /* --- MODO CLARO --- */
-    --background: 0 0% 100%;
-    --foreground: 222 47% 5%;
+    /* --- MODO CLARO (Identidade Foca.AI) --- */
+    
+    /* Fundo Cinza Claro (#F8FAFC) */
+    --background: 210 40% 98%; 
+    /* Texto Azul Marinho Escuro (#040949) */
+    --foreground: 222.2 84% 4.9%; 
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 5%;
+    --card-foreground: 222.2 84% 4.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 5%;
+    --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222 47% 11%;
+    /* AZUL VIBRANTE DA MARCA (#0026f7) */
+    --primary: 231 100% 48%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215 16% 40%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
     --accent: 210 40% 96.1%;
-    --accent-foreground: 222 47% 11%;
+    --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222 47% 11%;
+    --ring: 231 100% 48%; /* Anel de foco também no azul vibrante */
 
-    --radius: 0.75rem;
+    --radius: 0.75rem; /* rounded-xl */
 
-    /* Cores dos Módulos */
+    /* Cores dos Módulos (Mantidas) */
     --finance: 221 83% 53%;
     --finance-light: 217 91% 95%;
     --health: 142 76% 36%;
@@ -55,9 +59,11 @@
     --gradient-schedule: linear-gradient(135deg, hsl(262, 83%, 58%) 0%, hsl(284, 77%, 65%) 100%);
     --gradient-academic: linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(217, 91%, 60%) 100%);
 
+    /* Sombras personalizadas do Preview */
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
     --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
     --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+    
     --shadow-finance: 0 4px 14px 0 hsl(217 91% 60% / 0.25);
     --shadow-health: 0 4px 14px 0 hsl(142 71% 45% / 0.25);
     --shadow-training: 0 4px 14px 0 hsl(25 95% 53% / 0.25);
@@ -65,24 +71,25 @@
   }
 
   .dark {
-    /* --- MODO ESCURO (Textos 100% Brancos) --- */
+    /* --- MODO ESCURO (Adaptado para legibilidade) --- */
     --background: 222 47% 4%;
     --foreground: 0 0% 100%;
 
-    --card: 222 47% 6%; /* Fundo escuro */
-    --card-foreground: 0 0% 100%; /* Texto Branco Puro */
+    --card: 222 47% 6%;
+    --card-foreground: 0 0% 100%;
 
     --popover: 222 47% 6%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 210 40% 98%;
+    /* Azul levemente mais claro para contraste no escuro */
+    --primary: 231 100% 60%;
     --primary-foreground: 222 47% 11%;
 
     --secondary: 217 33% 15%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 217 33% 15%;
-    --muted-foreground: 215 20% 90%; /* Cinza muito claro para leitura fácil */
+    --muted-foreground: 215 20% 90%;
 
     --accent: 217 33% 15%;
     --accent-foreground: 0 0% 100%;
@@ -92,8 +99,9 @@
 
     --border: 217 33% 15%;
     --input: 217 33% 15%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 231 100% 60%;
 
+    /* Cores Módulos Dark */
     --finance: 217 91% 75%;
     --finance-light: 217 91% 15%;
     --health: 142 71% 65%;
@@ -120,26 +128,34 @@
     @apply font-semibold tracking-tight;
   }
 
-  /* ========================================================================
-     CORREÇÃO FORÇADA PARA O RECHARTS (GRÁFICOS) NO MODO ESCURO
-     ======================================================================== */
-  
-  /* 1. Força a cor do texto dos Eixos (X e Y) e Legendas SVG para BRANCO */
+  /* Scrollbar personalizada (Estilo do Preview) */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  /* Recharts Dark Mode Overrides */
   .dark .recharts-text,
   .dark .recharts-cartesian-axis-tick-value,
   .dark .recharts-legend-item-text {
     fill: #ffffff !important;
     color: #ffffff !important;
   }
-
-  /* 2. Força o texto dentro do TOOLTIP (aquele quadradinho flutuante) para BRANCO */
   .dark .recharts-default-tooltip {
     background-color: hsl(var(--card)) !important;
     border-color: hsl(var(--border)) !important;
     color: #ffffff !important;
   }
-
-  /* Garante que cada item da lista do tooltip seja branco */
   .dark .recharts-tooltip-item-list li,
   .dark .recharts-tooltip-item-name,
   .dark .recharts-tooltip-item-value,
@@ -147,8 +163,6 @@
     color: #ffffff !important;
     fill: #ffffff !important;
   }
-  
-  /* 3. Ajusta a opacidade das linhas de grade para não poluir */
   .dark .recharts-cartesian-grid-horizontal line,
   .dark .recharts-cartesian-grid-vertical line {
     stroke: #334155 !important;
@@ -157,6 +171,7 @@
 }
 
 @layer components {
+  /* Cards com o estilo do Preview: Borda arredondada suave e sombra */
   .module-card {
     @apply relative overflow-hidden rounded-xl border bg-card p-6 transition-all duration-300;
     box-shadow: var(--shadow-md);
@@ -178,41 +193,11 @@
   .module-card-schedule { @apply border-l-4; border-left-color: hsl(var(--schedule)); }
   .module-card-schedule:hover { box-shadow: var(--shadow-schedule); }
 
-  .metric-card {
-    @apply flex flex-col gap-2 rounded-xl bg-card p-5 border transition-all duration-200;
-    box-shadow: var(--shadow-sm);
-  }
-  .metric-card:hover { box-shadow: var(--shadow-md); }
-
-  .icon-container { @apply flex h-12 w-12 items-center justify-center rounded-xl; }
+  /* Ajustes nos badges para ficarem mais elegantes */
+  .status-badge { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold; }
   
-  .icon-finance { background: var(--gradient-finance); @apply text-white; }
-  .icon-health { background: var(--gradient-health); @apply text-white; }
-  .icon-training { background: var(--gradient-training); @apply text-white; }
-  .icon-schedule { background: var(--gradient-schedule); @apply text-white; }
-
-  .status-badge { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium; }
-  .status-synced { @apply bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300; }
-  .status-pending { @apply bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300; }
-
-  .nav-item { @apply flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all duration-200; }
+  .nav-item { @apply flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200; }
   .nav-item:hover { @apply bg-accent text-accent-foreground; }
-  .nav-item.active { @apply bg-primary text-primary-foreground; }
-
-  .text-finance { color: hsl(var(--finance)); }
-  .text-health { color: hsl(var(--health)); }
-  .text-training { color: hsl(var(--training)); }
-  .text-schedule { color: hsl(var(--schedule)); }
-
-  .bg-finance { background-color: hsl(var(--finance)); }
-  .bg-finance-light { background-color: hsl(var(--finance-light)); }
-  .bg-health { background-color: hsl(var(--health)); }
-  .bg-health-light { background-color: hsl(var(--health-light)); }
-  .bg-training { background-color: hsl(var(--training)); }
-  .bg-training-light { background-color: hsl(var(--training-light)); }
-  .bg-schedule { background-color: hsl(var(--schedule)); }
-  .bg-schedule-light { background-color: hsl(var(--schedule-light)); }
-  
-  @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+  /* Item ativo com o Azul Vibrante */
+  .nav-item.active { @apply bg-primary text-primary-foreground shadow-md shadow-blue-500/20; }
 }

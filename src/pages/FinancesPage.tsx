@@ -1,6 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Wallet, TrendingUp, TrendingDown, PieChart, ArrowLeftRight, Search, Filter } from "lucide-react";
+import { 
+  Wallet, 
+  TrendingUp, 
+  TrendingDown, 
+  PieChart, 
+  ArrowLeftRight, 
+  Search, 
+  Filter, 
+  ChevronDown, 
+  ChevronUp 
+} from "lucide-react";
 import { format } from "date-fns";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
@@ -13,7 +23,22 @@ import { DateRangeSelector, DateRange, getDefaultDateRange } from "@/components/
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { sql } from "@/lib/neon";
+
+const CATEGORIES = [
+  "Todas",
+  "Lazer",
+  "Alimentação",
+  "Despesa fixa",
+  "Despesa variável",
+  "Transporte",
+  "Saúde",
+  "Educação",
+  "Investimento",
+  "Moradia",
+  "Outros"
+];
 
 interface FinanceData {
   balance: number;
@@ -26,6 +51,7 @@ interface FinanceData {
 export default function FinancesPage() {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange(30));
+  
   const [data, setData] = useState<FinanceData>({
     balance: 0,
     totalIncome: 0,
@@ -36,6 +62,10 @@ export default function FinancesPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Todas");
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
+
   useEffect(() => {
     async function fetchData() {
       if (!user) return;
@@ -44,8 +74,6 @@ export default function FinancesPage() {
         const startDate = format(dateRange.from, "yyyy-MM-dd");
         const endDate = format(dateRange.to, "yyyy-MM-dd");
 
-        // CORREÇÃO: Removido o '::integer' para garantir a compatibilidade com o ID do usuário
-        // Verifique também se o nome da coluna no seu banco é 'transaction_date' ou 'calendario'
         const finances = await sql`
           SELECT * FROM finances 
           WHERE user_id = ${user.id} 
@@ -107,6 +135,22 @@ export default function FinancesPage() {
 
     fetchData();
   }, [user, dateRange]);
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((t) => {
+      const matchesSearch = 
+        t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.category.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesCategory = selectedCategory === "Todas" || t.category === selectedCategory;
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [transactions, searchTerm, selectedCategory]);
+
+  const displayedTransactions = showAllTransactions 
+    ? filteredTransactions 
+    : filteredTransactions.slice(0, 5);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -190,37 +234,88 @@ export default function FinancesPage() {
       <Card>
         <CardHeader className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <CardTitle>Histórico</CardTitle>
-            <div className="flex items-center gap-2">
+            <CardTitle>Histórico de Transações</CardTitle>
+            
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <div className="w-full sm:w-[180px]">
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger>
+                    <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
+                    <SelectValue placeholder="Categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="relative flex-1 sm:flex-none">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar..." className="pl-8 w-full sm:w-[200px]" />
+                <Input 
+                  placeholder="Buscar..." 
+                  className="pl-8 w-full sm:w-[200px]" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-              <Button variant="outline" size="icon"><Filter className="h-4 w-4" /></Button>
             </div>
           </div>
         </CardHeader>
+        
         <CardContent className="p-0 sm:p-6">
           <div className="divide-y">
-            {transactions.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">Nenhuma transação encontrada.</p>
+            {filteredTransactions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <Search className="h-10 w-10 mb-2 opacity-20" />
+                <p>Nenhuma transação encontrada.</p>
+              </div>
             ) : (
-              transactions.map((t: any) => (
-                <div key={t.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3 sm:gap-4">
-                    <div className={`p-2 rounded-full shrink-0 ${t.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                      {t.type === 'income' ? <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" /> : <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5" />}
+              <>
+                {displayedTransactions.map((t: any) => (
+                  <div key={t.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className={`p-2 rounded-full shrink-0 ${t.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                        {t.type === 'income' ? <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" /> : <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5" />}
+                      </div>
+                      
+                      <div className="min-w-0"> 
+                        <p className="font-medium truncate max-w-[150px] sm:max-w-xs">{t.description || "Sem descrição"}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                          {t.category} • {format(new Date(t.transaction_date), "dd/MM")}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0"> 
-                      <p className="font-medium truncate max-w-[150px] sm:max-w-none">{t.description}</p>
-                      <p className="text-xs sm:text-sm text-muted-foreground">{t.category} • {format(new Date(t.transaction_date), "dd/MM")}</p>
+                    
+                    <div className={`font-bold text-sm sm:text-base whitespace-nowrap ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                      {t.type === 'income' ? '+' : '-'}{formatCurrency(Number(t.amount))}
                     </div>
                   </div>
-                  <div className={`font-bold text-sm sm:text-base ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                    {t.type === 'income' ? '+' : '-'}{formatCurrency(Number(t.amount))}
+                ))}
+
+                {filteredTransactions.length > 5 && (
+                  <div className="p-4 border-t bg-muted/10 flex justify-center">
+                    <Button 
+                      variant="ghost" 
+                      className="gap-2 text-primary hover:text-primary/80"
+                      onClick={() => setShowAllTransactions(!showAllTransactions)}
+                    >
+                      {showAllTransactions ? (
+                        <>
+                          Mostrar menos <ChevronUp className="h-4 w-4" />
+                        </>
+                      ) : (
+                        <>
+                          Ver todas as transações ({filteredTransactions.length}) <ChevronDown className="h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
                   </div>
-                </div>
-              ))
+                )}
+              </>
             )}
           </div>
         </CardContent>

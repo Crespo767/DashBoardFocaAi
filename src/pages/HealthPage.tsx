@@ -10,6 +10,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { WaterChart } from "@/components/health/WaterChart";
 import { SleepChart } from "@/components/health/SleepChart";
 import { HealthLog } from "@/components/health/HealthLog";
+import { WeightList } from "@/components/health/WeightList"; 
 import { DateRangeSelector, DateRange, getDefaultDateRange } from "@/components/ui/date-range-selector";
 import { sql } from "@/lib/neon";
 
@@ -21,7 +22,8 @@ interface HealthData {
   lastWeight: number | null;
   waterHistory: { date: string; value: number }[];
   sleepHistory: { date: string; value: number }[];
-  workoutLog: { item: string; date: string }[];
+  workoutLog: { item: string; date: string; value: number }[];
+  weightLog: { date: string; value: number }[];
 }
 
 export default function HealthPage() {
@@ -36,6 +38,7 @@ export default function HealthPage() {
     waterHistory: [],
     sleepHistory: [],
     workoutLog: [],
+    weightLog: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -45,11 +48,10 @@ export default function HealthPage() {
 
       try {
         setLoading(true);
-        const todayStr = new Date().toISOString().split("T")[0];
+        const todayStr = format(new Date(), "yyyy-MM-dd");
         const startDate = format(dateRange.from, "yyyy-MM-dd");
         const endDate = format(dateRange.to, "yyyy-MM-dd");
 
-        // QUERY SQL NEON - REMOVIDO ::integer
         const healthData = await sql`
           SELECT * FROM health 
           WHERE user_id = ${user.id} 
@@ -58,25 +60,30 @@ export default function HealthPage() {
           ORDER BY calendario ASC
         `;
 
-        const waterToday = healthData
-          .filter((h: any) => h.category === "agua" && new Date(h.calendario).toISOString().startsWith(todayStr))
-          .reduce((acc: number, h: any) => acc + Number(h.value), 0);
+        const allWaterData = await sql`
+            SELECT value FROM health 
+            WHERE user_id = ${user.id} 
+            AND category = 'agua'
+            AND calendario::date = ${todayStr}::date
+        `;
+        const waterToday = allWaterData.reduce((acc: number, h: any) => acc + Number(h.value), 0);
 
         const waterMap = new Map<string, number>();
-        healthData.filter((h: any) => h.category === "agua").forEach((h: any) => {
+        healthData
+          .filter((h: any) => h.category === 'agua')
+          .forEach((h: any) => {
             const d = new Date(h.calendario).toISOString().split('T')[0];
             waterMap.set(d, (waterMap.get(d) || 0) + Number(h.value));
-        });
+          });
         const waterHistory = Array.from(waterMap.entries()).map(([date, value]) => ({ date, value }));
 
         const sleepHistory = healthData
-          .filter((h: any) => h.category === "sono")
+          .filter((h: any) => h.category === 'sono')
           .map((h: any) => ({ 
-              date: new Date(h.calendario).toISOString().split('T')[0], 
-              value: Number(h.value) 
+             date: new Date(h.calendario).toISOString().split('T')[0], 
+             value: Number(h.value) 
           }));
 
-        // REMOVIDO ::integer NAS CONSULTAS INDIVIDUAIS
         const lastSleepRes = await sql`
             SELECT value FROM health 
             WHERE user_id = ${user.id} 
@@ -93,8 +100,21 @@ export default function HealthPage() {
         const lastWeight = lastWeightRes.length ? Number(lastWeightRes[0].value) : null;
 
         const workoutLog = healthData
-          .filter((h: any) => h.category === "treino")
-          .map((h: any) => ({ item: h.item || "Treino", date: new Date(h.calendario).toISOString().split('T')[0] }));
+          .filter((h: any) => h.category === 'treino')
+          .map((h: any) => ({ 
+              item: h.item || "Treino", 
+              value: Number(h.value), 
+              date: new Date(h.calendario).toISOString().split('T')[0] 
+          }))
+          .reverse(); 
+
+        const weightLog = healthData
+          .filter((h: any) => h.category === 'peso')
+          .map((h: any) => ({
+              value: Number(h.value),
+              date: new Date(h.calendario).toISOString().split('T')[0]
+          }))
+          .reverse();
 
         setData({
           waterToday,
@@ -105,6 +125,7 @@ export default function HealthPage() {
           waterHistory,
           sleepHistory,
           workoutLog,
+          weightLog,
         });
       } catch (error) {
         console.error("Erro ao buscar dados de saúde:", error);
@@ -158,64 +179,87 @@ export default function HealthPage() {
           icon={<Scale className="h-5 w-5" />}
         />
         <MetricDisplay
-          label="Treinos recentes"
+          label="Treinos período"
           value={data.workoutLog.length}
           variant="training"
           icon={<Dumbbell className="h-5 w-5" />}
         />
       </div>
 
-      <div className="mb-6 p-4 rounded-lg bg-secondary/50 flex flex-wrap gap-6 text-sm">
+      <div className="mb-6 p-4 rounded-xl bg-primary/5 border border-primary/10 flex flex-wrap gap-6 text-sm">
         <div className="flex items-center gap-2">
           <Droplets className="h-4 w-4 text-blue-500" />
-          <span>Meta de água: <strong>{data.waterGoal}ml/dia</strong></span>
+          <span>Meta de água: <strong className="text-foreground">{data.waterGoal}ml/dia</strong></span>
         </div>
         <div className="flex items-center gap-2">
           <Moon className="h-4 w-4 text-orange-500" />
-          <span>Meta de sono: <strong>{data.sleepGoal}h/noite</strong></span>
+          <span>Meta de sono: <strong className="text-foreground">{data.sleepGoal}h/noite</strong></span>
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <motion.div
-          className="rounded-xl border bg-card p-6"
+          className="rounded-xl border bg-card p-6 shadow-sm"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-            <Droplets className="h-5 w-5 text-blue-500" />
+          <h3 className="mb-6 flex items-center gap-2 text-lg font-semibold">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Droplets className="h-5 w-5 text-blue-600" />
+            </div>
             Consumo de água
           </h3>
           <WaterChart data={data.waterHistory} goal={data.waterGoal} />
         </motion.div>
 
         <motion.div
-          className="rounded-xl border bg-card p-6"
+          className="rounded-xl border bg-card p-6 shadow-sm"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-            <Moon className="h-5 w-5 text-orange-500" />
+          <h3 className="mb-6 flex items-center gap-2 text-lg font-semibold">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <Moon className="h-5 w-5 text-orange-600" />
+            </div>
             Horas de sono
           </h3>
           <SleepChart data={data.sleepHistory} goal={data.sleepGoal} />
         </motion.div>
       </div>
 
-      <motion.div
-        className="mt-6 rounded-xl border bg-card p-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-          <Dumbbell className="h-5 w-5 text-orange-500" />
-          Histórico de treinos
-        </h3>
-        <HealthLog data={data.workoutLog} />
-      </motion.div>
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <motion.div
+          className="rounded-xl border bg-card p-6 shadow-sm"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <h3 className="mb-6 flex items-center gap-2 text-lg font-semibold">
+            <div className="p-2 bg-orange-100 rounded-lg">
+               <Dumbbell className="h-5 w-5 text-orange-600" />
+            </div>
+            Histórico de treinos
+          </h3>
+          <HealthLog data={data.workoutLog} />
+        </motion.div>
+
+        <motion.div
+          className="rounded-xl border bg-card p-6 shadow-sm"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <h3 className="mb-6 flex items-center gap-2 text-lg font-semibold">
+            <div className="p-2 bg-slate-100 rounded-lg dark:bg-slate-800">
+               <Scale className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+            </div>
+            Histórico de peso
+          </h3>
+          <WeightList data={data.weightLog} />
+        </motion.div>
+      </div>
     </DashboardLayout>
   );
 }

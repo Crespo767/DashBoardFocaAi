@@ -4,9 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext"; // 1. Importei o useAuth
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import ScrollToTop from "@/components/ScrollToTop";
-import { LoadingSpinner } from "@/components/ui/loading-spinner"; // 2. Importei o Spinner para feedback visual
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 // Pages
 import Dashboard from "./pages/Dashboard";
@@ -18,25 +18,53 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Componente simples que apenas renderiza o conteúdo
-// (Seu Dashboard já trata o caso de 'sem usuário', então mantivemos simples)
+// Modificado: Agora verifica se o usuário existe.
+// Se não existir, mostra mensagem de bloqueio.
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+
+  if (loading) return null; // O spinner global já está lidando com isso no AppRoutes
+
+  if (!user) {
+    return (
+      <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-background p-6 text-center">
+        <div className="rounded-full bg-destructive/10 p-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-destructive"
+          >
+            <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight">Acesso Restrito</h1>
+        <p className="text-muted-foreground max-w-[400px]">
+          Este painel só pode ser acessado através do link seguro enviado pelo seu assistente.
+        </p>
+      </div>
+    );
+  }
+
   return <>{children}</>;
 }
 
 function AppRoutes() {
-  const { loading } = useAuth(); // 3. Pega o estado de carregamento do AuthContext
+  const { loading } = useAuth();
 
-  // 4. BLOQUEIO DE SEGURANÇA:
-  // Enquanto o AuthContext estiver verificando o token/banco,
-  // nós mostramos um spinner e NÃO carregamos as rotas.
-  // Isso impede que o <Navigate> rode e limpe a URL antes da hora.
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <LoadingSpinner className="h-10 w-10 text-primary" />
         <span className="ml-3 text-muted-foreground animate-pulse">
-          Validando acesso...
+          Verificando credenciais...
         </span>
       </div>
     );
@@ -44,12 +72,9 @@ function AppRoutes() {
 
   return (
     <Routes>
-      {/* Se o usuário acessar a raiz /, redireciona para o dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       
-      {/* Se o usuário acessar /login (com ou sem token), manda pro dashboard */}
-      {/* O AuthContext já terá capturado o token antes desse redirecionamento acontecer */}
-      <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+      {/* Rota de Login removida conforme solicitado */}
 
       <Route
         path="/dashboard"
@@ -105,7 +130,6 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <ScrollToTop />
-          {/* O AuthProvider envolve o AppRoutes para fornecer o contexto */}
           <AuthProvider>
             <AppRoutes />
           </AuthProvider>

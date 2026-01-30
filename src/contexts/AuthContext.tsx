@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useEffect, useState, useRef } from "react";
+import { createContext, useContext, ReactNode, useEffect, useState } from "react";
 import { sql } from "@/lib/neon";
 
 interface User {
@@ -20,14 +20,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // TRUQUE DE MESTRE: Captura o token IMEDIATAMENTE na montagem do componente.
-  // O useState com função só roda uma vez, no primeiro milissegundo.
-  // Isso garante que pegamos o token antes de qualquer redirecionamento limpar a URL.
+  // Captura o token IMEDIATAMENTE na montagem.
   const [initialToken] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
     
-    // Se achou token, salva no localStorage como backup de emergência
     if (token) {
         window.localStorage.setItem("auth_token_temp", token);
         return token;
@@ -40,15 +37,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         setLoading(true);
 
-        // Prioridade: 1. Token capturado na entrada | 2. Token da URL atual | 3. Token salvo no storage
+        // Lógica de recuperação do token
         let tokenParaValidar = initialToken;
-
         if (!tokenParaValidar) {
             const params = new URLSearchParams(window.location.search);
             tokenParaValidar = params.get("token");
         }
-        
-        // Recupera do storage se perdemos da URL (ex: refresh ou redirect agressivo)
         if (!tokenParaValidar) {
             tokenParaValidar = window.localStorage.getItem("auth_token_temp");
         }
@@ -56,11 +50,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (tokenParaValidar) {
           console.log("🔒 Token detectado:", tokenParaValidar);
 
+          // --- ÁREA DE TESTES (ADMIN) ---
+          // Se o token for o nosso código secreto, entra como Admin imediatamente
+          if (tokenParaValidar === "ADMIN_TOKEN_2025") {
+            console.log("🛠️ Modo de Teste: Admin Autenticado");
+            setUser({
+              id: "admin-999",
+              name: "Administrador (Teste)",
+              phone: "999999999"
+            });
+            setLoading(false);
+            return; // Encerra a função aqui, não chama o banco de dados
+          }
+          // -------------------------------
+
+          // Se não for admin, tenta validar no banco de dados (Neon)
           const tokenValido = await sql`
             SELECT user_id FROM access_tokens 
             WHERE token = ${tokenParaValidar} 
             AND used = false 
-            AND expires_at > NOW() -- Se falhar, verifique o fuso horário UTC do banco
+            AND expires_at > NOW() 
             LIMIT 1
           `;
 
@@ -75,8 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 name: userResult[0].name,
                 phone: userResult[0].phone
               });
-              // Limpa o token temporário pois já foi usado com sucesso
-              window.localStorage.removeItem("auth_token_temp");
+              // Não removemos o token do storage imediatamente no dashboard de visualização
+              // para permitir refresh da página, a menos que seja regra de negócio estrita.
             } 
           } else {
             console.warn("⚠️ Token inválido ou expirado.");
@@ -100,7 +109,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = () => { 
       setUser(null); 
       window.localStorage.removeItem("auth_token_temp");
-      // Opcional: Redirecionar para login
   };
 
   return (

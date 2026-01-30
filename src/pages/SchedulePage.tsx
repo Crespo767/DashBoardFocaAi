@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar as CalendarIcon, Clock, CheckCircle, XCircle, RefreshCw } from "lucide-react";
-import { format, isSameDay, parseISO } from "date-fns";
+import { Calendar as CalendarIcon, Clock, CheckCircle, CalendarDays, RefreshCw } from "lucide-react";
+import { format, isSameDay, parseISO, addMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
@@ -11,7 +11,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { EventsList } from "@/components/schedule/EventsList";
 import { UpcomingEventsCard } from "@/components/schedule/UpcomingEventsCard";
-import { DateRangeSelector, DateRange, getDefaultDateRange } from "@/components/ui/date-range-selector";
 import { sql } from "@/lib/neon";
 
 interface ScheduleEvent {
@@ -26,7 +25,6 @@ interface ScheduleEvent {
 
 export default function SchedulePage() {
   const { user } = useAuth();
-  const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange(30));
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
@@ -36,19 +34,23 @@ export default function SchedulePage() {
     if (!user) return;
     try {
       if (!isBackgroundUpdate) setLoading(true);
-      const now = new Date().toISOString();
+      
+      const bufferTime = addMinutes(new Date(), -30).toISOString();
+      
       const data = await sql`
         SELECT * FROM agendamento 
-        WHERE user_id = ${user.id}::integer 
-        AND start_time >= ${now}
+        WHERE user_id = ${user.id} 
+        AND start_time >= ${bufferTime}
         ORDER BY start_time ASC
       `;
+      
       const formattedEvents = data.map((e: any) => ({
           ...e,
           id: String(e.id),
           start_time: new Date(e.start_time).toISOString(),
           end_time: e.end_time ? new Date(e.end_time).toISOString() : null
       }));
+      
       setEvents(formattedEvents);
       setLastUpdated(new Date());
     } catch (error) {
@@ -60,16 +62,19 @@ export default function SchedulePage() {
 
   useEffect(() => {
     fetchEvents();
-    const interval = setInterval(() => fetchEvents(true), 5000);
+    const interval = setInterval(() => fetchEvents(true), 60000);
     return () => clearInterval(interval);
   }, [user]);
 
   const filteredEvents = events.filter((event) =>
     isSameDay(parseISO(event.start_time), selectedDate)
   );
-  const upcomingEvents = events; 
+
+  const eventsToday = events.filter((event) => 
+    isSameDay(parseISO(event.start_time), new Date())
+  );
+
   const syncedCount = events.filter((e) => e.google_event_id).length;
-  const pendingCount = events.filter((e) => !e.google_event_id).length;
   const eventDates = events.map((e) => parseISO(e.start_time));
 
   if (loading) {
@@ -77,6 +82,7 @@ export default function SchedulePage() {
       <DashboardLayout>
         <div className="flex h-96 items-center justify-center flex-col gap-4">
           <LoadingSpinner size="lg" />
+          <p className="text-muted-foreground animate-pulse">Sincronizando agenda...</p>
         </div>
       </DashboardLayout>
     );
@@ -86,26 +92,28 @@ export default function SchedulePage() {
     <DashboardLayout>
       <PageHeader
         title="Agenda"
-        description="Seus compromissos"
+        description="Próximos compromissos em tempo real"
         icon={<CalendarIcon className="h-6 w-6" />}
         actions={
-            <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full hidden sm:flex">
-                    <RefreshCw className="h-3 w-3 animate-spin" />
-                    {format(lastUpdated, "HH:mm")}
-                </div>
-                <DateRangeSelector value={dateRange} onChange={setDateRange} />
+            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                Atualizado às {format(lastUpdated, "HH:mm")}
             </div>
         }
       />
 
-      {/* MOBILE FIX: grid-cols-2 para as métricas ficarem menores e mais densas */}
       <div className="mb-8 grid gap-3 grid-cols-2 sm:grid-cols-3">
         <MetricDisplay
-          label="Futuros"
-          value={upcomingEvents.length}
+          label="Total na Agenda"
+          value={events.length}
           variant="schedule"
           icon={<Clock className="h-5 w-5" />}
+        />
+        <MetricDisplay
+          label="Eventos Hoje"
+          value={eventsToday.length}
+          variant="training"
+          icon={<CalendarDays className="h-5 w-5" />}
         />
         <MetricDisplay
           label="Sincronizados"
@@ -113,34 +121,19 @@ export default function SchedulePage() {
           variant="health"
           icon={<CheckCircle className="h-5 w-5" />}
         />
-        {/* O terceiro item ocupa as 2 colunas no mobile para não ficar um buraco, ou fica normal. 
-            Vou deixar normal para manter o padrão 2x2 (com um vazio) ou fluido. */}
-        <MetricDisplay
-          label="Pendentes"
-          value={pendingCount}
-          variant="training"
-          icon={<XCircle className="h-5 w-5" />}
-        />
       </div>
 
       <div className="mb-6">
-        {upcomingEvents.length > 0 ? (
-            <UpcomingEventsCard events={upcomingEvents} maxEvents={5} />
-        ) : (
-            <div className="p-6 border rounded-lg bg-card text-center text-muted-foreground">
-                <p>Sem compromissos futuros.</p>
-            </div>
-        )}
+          <UpcomingEventsCard events={events} />
       </div>
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         <motion.div
-          className="rounded-xl border bg-card p-4 sm:p-6 overflow-hidden flex justify-center" // Centraliza o calendário
+          className="rounded-xl border bg-card p-4 sm:p-6 overflow-hidden flex justify-center h-fit"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          {/* Wrapper para garantir que o calendário não estoure */}
           <div className="w-full max-w-[350px]">
             <Calendar
               mode="single"
@@ -150,12 +143,13 @@ export default function SchedulePage() {
               modifiers={{ hasEvent: eventDates }}
               modifiersStyles={{
                 hasEvent: {
-                  backgroundColor: "hsl(var(--primary) / 0.2)",
+                  backgroundColor: "hsl(262 83% 58% / 0.15)",
                   borderRadius: "50%",
                   fontWeight: "bold",
-                  color: "hsl(var(--primary))"
+                  color: "hsl(262 83% 58%)"
                 },
               }}
+              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
               className="rounded-md border-none w-full"
             />
           </div>
@@ -167,10 +161,11 @@ export default function SchedulePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h3 className="mb-4 text-lg font-semibold">
-            Eventos em {format(selectedDate, "dd 'de' MMM", { locale: ptBR })}
+          <h3 className="mb-4 text-lg font-semibold flex items-center gap-2">
+            <div className="w-2 h-6 bg-purple-500 rounded-full"></div>
+            Eventos em {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
           </h3>
-          <EventsList events={filteredEvents} onRefresh={() => fetchEvents(false)} />
+          <EventsList events={filteredEvents} />
         </motion.div>
       </div>
     </DashboardLayout>

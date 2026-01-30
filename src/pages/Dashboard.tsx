@@ -1,8 +1,6 @@
-// src/pages/Dashboard.tsx
-
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
+import { format, addMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { FinanceSummaryCard } from "@/components/dashboard/FinanceSummaryCard";
@@ -82,7 +80,7 @@ export default function Dashboard() {
         const endDate = format(dateRange.to, "yyyy-MM-dd");
         const todayStr = format(new Date(), "yyyy-MM-dd");
 
-        // 1. FINANÇAS
+        // 1. FINANÇAS (Removido ::integer)
         const finances = await sql`
           SELECT * FROM finances 
           WHERE user_id = ${user.id} 
@@ -115,25 +113,30 @@ export default function Dashboard() {
             transaction_date: new Date(f.transaction_date).toISOString(),
           }));
 
-        // 2. SAÚDE
+        // 2. SAÚDE (Removido ::integer)
         const healthData = await sql`
           SELECT * FROM health 
           WHERE user_id = ${user.id} 
           AND calendario >= ${todayStr}
         `;
 
-        const waterToday = healthData.filter((h: any) => h.category === "Agua").reduce((acc: number, h: any) => acc + Number(h.value), 0);
-        const sleepResult = await sql`SELECT value FROM health WHERE user_id = ${user.id} AND category = 'Sono' ORDER BY calendario DESC LIMIT 1`;
+        const waterToday = healthData.filter((h: any) => h.category === "Agua" || h.category === "agua").reduce((acc: number, h: any) => acc + Number(h.value), 0);
+        const sleepResult = await sql`
+            SELECT value FROM health 
+            WHERE user_id = ${user.id} 
+            AND (category = 'Sono' OR category = 'sono') 
+            ORDER BY calendario DESC LIMIT 1
+        `;
         const lastSleep = sleepResult.length > 0 ? Number(sleepResult[0].value) : null;
 
-        // 3. ACADÊMICO
+        // 3. ACADÊMICO (Removido ::integer)
         const academicDocs = await sql`SELECT tags FROM academic WHERE user_id = ${user.id}`;
         const tagMap: Record<string, number> = {};
         academicDocs.forEach((doc: any) => { if(doc.tags) tagMap[doc.tags] = (tagMap[doc.tags] || 0) + 1; });
         const tagCounts = Object.entries(tagMap).map(([tag, count]) => ({ tag, count }));
 
-        // 4. AGENDA - FILTRO DEFINITIVO
-        // Usamos CURRENT_TIMESTAMP para garantir precisão de minutos e status para filtrar cancelados.
+        // 4. AGENDA (Removido ::integer)
+        const bufferTime = addMinutes(new Date(), -30).toISOString();
         const events = await sql`
           SELECT 
             id, 
@@ -142,7 +145,7 @@ export default function Dashboard() {
             google_event_id 
           FROM agendamento 
           WHERE user_id = ${user.id} 
-          AND start_time >= CURRENT_TIMESTAMP 
+          AND start_time >= ${bufferTime} 
           AND status NOT IN ('cancelado', 'concluido')
           ORDER BY start_time ASC 
           LIMIT 5
@@ -179,14 +182,21 @@ export default function Dashboard() {
     return () => { isMounted = false; };
   }, [user, dateRange]);
 
-  if (loading) return <DashboardLayout><div className="flex items-center justify-center min-h-[60vh]"><LoadingSpinner /></div></DashboardLayout>;
-  if (!user) return <DashboardLayout><div className="flex flex-col items-center justify-center min-h-[60vh] gap-4"><h2 className="text-xl font-semibold">Sessão expirada ou não iniciada</h2><Link to="/auth"><Button>Fazer Login</Button></Link></div></DashboardLayout>;
+  if (loading) return (
+    <DashboardLayout>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <LoadingSpinner size="lg" />
+      </div>
+    </DashboardLayout>
+  );
+
+  if (!user) return null;
 
   return (
     <DashboardLayout>
       <motion.div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
         <div>
-          <h1 className="text-3xl font-bold">{getGreeting()}, {summary.userName}! 👋</h1>
+          <h1 className="text-3xl font-bold text-[#040949]">{getGreeting()}, {summary.userName}! 👋</h1>
           <p className="text-muted-foreground capitalize mt-1">{todayFormatted}</p>
         </div>
         <DateRangeSelector value={dateRange} onChange={setDateRange} />
