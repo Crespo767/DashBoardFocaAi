@@ -13,8 +13,6 @@ import { DateRangeSelector, DateRange, getDefaultDateRange } from "@/components/
 import { useAuth } from "@/contexts/AuthContext";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { sql } from "@/lib/neon"; 
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 
 interface Transaction {
   id: string;
@@ -80,7 +78,7 @@ export default function Dashboard() {
         const endDate = format(dateRange.to, "yyyy-MM-dd");
         const todayStr = format(new Date(), "yyyy-MM-dd");
 
-        // 1. FINANÇAS (Removido ::integer)
+        // 1. FINANÇAS
         const finances = await sql`
           SELECT * FROM finances 
           WHERE user_id = ${user.id} 
@@ -113,7 +111,7 @@ export default function Dashboard() {
             transaction_date: new Date(f.transaction_date).toISOString(),
           }));
 
-        // 2. SAÚDE (Removido ::integer)
+        // 2. SAÚDE
         const healthData = await sql`
           SELECT * FROM health 
           WHERE user_id = ${user.id} 
@@ -129,13 +127,13 @@ export default function Dashboard() {
         `;
         const lastSleep = sleepResult.length > 0 ? Number(sleepResult[0].value) : null;
 
-        // 3. ACADÊMICO (Removido ::integer)
+        // 3. ACADÊMICO
         const academicDocs = await sql`SELECT tags FROM academic WHERE user_id = ${user.id}`;
         const tagMap: Record<string, number> = {};
         academicDocs.forEach((doc: any) => { if(doc.tags) tagMap[doc.tags] = (tagMap[doc.tags] || 0) + 1; });
         const tagCounts = Object.entries(tagMap).map(([tag, count]) => ({ tag, count }));
 
-        // 4. AGENDA (Removido ::integer)
+        // 4. AGENDA
         const bufferTime = addMinutes(new Date(), -30).toISOString();
         const events = await sql`
           SELECT 
@@ -190,7 +188,14 @@ export default function Dashboard() {
     </DashboardLayout>
   );
 
-  if (!user) return null;
+  if (!user) return (
+    <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
+            <h2 className="text-xl font-semibold">Sessão expirada ou não iniciada</h2>
+            <p className="text-muted-foreground">Por favor, acesse novamente pelo link oficial.</p>
+        </div>
+    </DashboardLayout>
+  );
 
   return (
     <DashboardLayout>
