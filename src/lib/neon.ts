@@ -1,10 +1,10 @@
 import { neon } from '@neondatabase/serverless';
 
-const connectionString = import.meta.env.VITE_DATABASE_URL;
+// Tenta pegar a VITE_ (para desenvolvimento local) ou a DATABASE_URL (para produção segura)
+const connectionString = import.meta.env.VITE_DATABASE_URL || process.env.DATABASE_URL;
 
 if (!connectionString) {
-  console.error("ERRO: VITE_DATABASE_URL não encontrada no .env");
+  throw new Error("ERRO: DATABASE_URL não encontrada.");
 }
 
-// Exportamos a função 'sql' para fazer consultas
-export const sql = neon(connectionString as string);
+export const sql = neon(connectionString);

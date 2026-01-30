@@ -44,9 +44,11 @@ export default function FinancesPage() {
         const startDate = format(dateRange.from, "yyyy-MM-dd");
         const endDate = format(dateRange.to, "yyyy-MM-dd");
 
+        // CORREÇÃO: Removido o '::integer' para garantir a compatibilidade com o ID do usuário
+        // Verifique também se o nome da coluna no seu banco é 'transaction_date' ou 'calendario'
         const finances = await sql`
           SELECT * FROM finances 
-          WHERE user_id = ${user.id}::integer 
+          WHERE user_id = ${user.id} 
           AND transaction_date >= ${startDate} 
           AND transaction_date <= ${endDate}
           ORDER BY transaction_date DESC
@@ -132,9 +134,6 @@ export default function FinancesPage() {
         actions={<DateRangeSelector value={dateRange} onChange={setDateRange} />}
       />
 
-      {/* MOBILE: grid-cols-1 (Um embaixo do outro)
-         DESKTOP (sm): sm:grid-cols-3 (Três colunas, IGUAL ANTES)
-      */}
       <div className="mb-8 grid gap-4 grid-cols-1 sm:grid-cols-3">
         <MetricDisplay
           label="Saldo atual"
@@ -156,10 +155,6 @@ export default function FinancesPage() {
         />
       </div>
 
-      {/* MOBILE: grid-cols-1 (Um gráfico embaixo do outro)
-         DESKTOP (lg): lg:grid-cols-2 (Lado a lado, IGUAL ANTES)
-         Adicionei 'overflow-hidden' para o gráfico não vazar no celular
-      */}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mb-8">
         <motion.div
           className="rounded-xl border bg-card p-4 sm:p-6 overflow-hidden" 
@@ -193,43 +188,43 @@ export default function FinancesPage() {
       </div>
 
       <Card>
-          <CardHeader className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <CardTitle>Histórico</CardTitle>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1 sm:flex-none">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Buscar..." className="pl-8 w-full sm:w-[200px]" />
-                </div>
-                <Button variant="outline" size="icon"><Filter className="h-4 w-4" /></Button>
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <CardTitle>Histórico</CardTitle>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 sm:flex-none">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Buscar..." className="pl-8 w-full sm:w-[200px]" />
               </div>
+              <Button variant="outline" size="icon"><Filter className="h-4 w-4" /></Button>
             </div>
-          </CardHeader>
-          <CardContent className="p-0 sm:p-6">
-            <div className="divide-y">
-              {transactions.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Nenhuma transação encontrada.</p>
-              ) : (
-                transactions.map((t: any) => (
-                  <div key={t.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <div className={`p-2 rounded-full shrink-0 ${t.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                        {t.type === 'income' ? <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" /> : <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5" />}
-                      </div>
-                      <div className="min-w-0"> 
-                        <p className="font-medium truncate max-w-[150px] sm:max-w-none">{t.description}</p>
-                        <p className="text-xs sm:text-sm text-muted-foreground">{t.category} • {format(new Date(t.transaction_date), "dd/MM")}</p>
-                      </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0 sm:p-6">
+          <div className="divide-y">
+            {transactions.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">Nenhuma transação encontrada.</p>
+            ) : (
+              transactions.map((t: any) => (
+                <div key={t.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className={`p-2 rounded-full shrink-0 ${t.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                      {t.type === 'income' ? <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" /> : <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5" />}
                     </div>
-                    <div className={`font-bold text-sm sm:text-base ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                      {t.type === 'income' ? '+' : '-'}{formatCurrency(Number(t.amount))}
+                    <div className="min-w-0"> 
+                      <p className="font-medium truncate max-w-[150px] sm:max-w-none">{t.description}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">{t.category} • {format(new Date(t.transaction_date), "dd/MM")}</p>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                  <div className={`font-bold text-sm sm:text-base ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                    {t.type === 'income' ? '+' : '-'}{formatCurrency(Number(t.amount))}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </DashboardLayout>
   );
 }
